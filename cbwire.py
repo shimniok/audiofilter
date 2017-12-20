@@ -11,14 +11,18 @@ import pyaudio
 import time
 from scipy.signal import butter, lfilter_zi, lfilter
 import numpy as np
+import matplotlib.pyplot as plt
 import struct
 import array
 
-WIDTH = 2
+WIDTH = 4
+MAXINT = 2147483647
 CHANNELS = 1
 RATE = 44100
-LOWCUT = 1000
-HIGHCUT = 10000
+LOWCUT = 1000.0
+HIGHCUT = 8000.0
+
+t = 0
 
 def design_filter(lowcut, highcut, fs, order=3):
     nyq = 0.5*fs
@@ -27,18 +31,21 @@ def design_filter(lowcut, highcut, fs, order=3):
     b,a = butter(order, [low,high], btype='band')
     return b,a
 
-def to_array(block):
+def to_floats(block):
     count = len(block)/WIDTH
-    format = "%dh"%(count)
+    format = "@%di"%(count)
     unpacked = struct.unpack(format, block)
-# convert to float between -1.0 and 1.0
-# int16 is -32768 to 32767.
-    norm = list(map(lambda x: float(x) / 32768, unpacked))
-    return unpacked
+    # convert to float between -1.0 and 1.0
+    # int16 is -32768 to 32767.
+    norm = list(map(lambda x: float(x) / 2147483648.0, unpacked))
+    return norm
 
 def to_string(block):
     count = len(block)
-    return []
+    format = "@%di"%(count)
+    ints = list(map(lambda x: int(x * 2147483648.0), block))
+    packed = struct.pack(format, *ints)
+    return packed
 
 p = pyaudio.PyAudio()
 
@@ -50,10 +57,13 @@ zi = lfilter_zi(b, a)
 
 def callback(in_data, frame_count, time_info, status):
     global zi
-#    print(to_array(in_data))
-    out_data,zi = lfilter(b, a, to_array(in_data), zi=zi)
-    #to_string(out_data)
-    return (in_data, pyaudio.paContinue)
+
+    #out_data,zi = lfilter(b, a, to_floats(in_data), zi=zi)
+    out_data = to_floats(in_data)
+    #out_data = list(map(lambda x: x * 0.1, out_data))
+    s = to_string(out_data)
+
+    return (s, pyaudio.paContinue)
 
 stream = p.open(format=pyaudio.get_format_from_width(WIDTH),
                 channels=CHANNELS,
