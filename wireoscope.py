@@ -24,11 +24,10 @@ CHANNELS = 1
 RATE = 44100
 BPH = 18000
 SAMPLES = RATE
-LOWCUT = 1000.0
-HIGHCUT = 8000.0
+LOWCUT = 2000.0
+HIGHCUT = 6000.0
 
 data = list([0]*SAMPLES)
-print(data)
 count = 0
 
 app = QtGui.QApplication([])
@@ -85,23 +84,17 @@ zi = lfilter_zi(b, a)
 
 def callback(in_data, frame_count, time_info, status):
     global zi, data, count
-
-    #out_data,zi = lfilter(b, a, to_floats(in_data), zi=zi)
-    out_data = to_floats(in_data)
-
-    print(count)
-
+    fdata = list(map(lambda x: x * 0.5, to_floats(in_data)))
+    out_data,zi = lfilter(b, a, fdata, zi=zi)
+    #out_data = to_floats(in_data)
+    #out_data = list(map(lambda x: x * 0.5, to_floats(in_data)))
     if count >= SAMPLES:
         count = 0
     data[count:count+1024] = out_data
     count += 1024
     update()
-
-    #out_data = list(map(lambda x: x * 0.1, out_data))
-
-    s = to_string(out_data)
-
-    return (s, pyaudio.paContinue)
+    #s = to_string(out_data)
+    return (in_data, pyaudio.paContinue)
 
 stream = p.open(format=pyaudio.get_format_from_width(WIDTH),
                 channels=CHANNELS,
