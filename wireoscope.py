@@ -27,7 +27,8 @@ SAMPLES = RATE
 LOWCUT = 1000.0
 HIGHCUT = 8000.0
 
-data = []
+data = list([0]*SAMPLES)
+print(data)
 count = 0
 
 app = QtGui.QApplication([])
@@ -43,7 +44,7 @@ p6 = win.addPlot(title="Updating plot")
 curve = p6.plot(pen='y')
 def update():
     global curve, p6, data
-    curve.setData(data)
+    curve.setData(data[:SAMPLES])
 
 def design_filter(lowcut, highcut, fs, order=3):
     nyq = 0.5*fs
@@ -84,11 +85,9 @@ def callback(in_data, frame_count, time_info, status):
 
     if count >= SAMPLES:
         count = 0
-        data = data[:SAMPLES]
-        update()
-        data = []
-    data += out_data
-    count += len(out_data)
+    data[count:count+1024+1] = out_data
+    count += 1024
+    update()
 
     #out_data = list(map(lambda x: x * 0.1, out_data))
 
