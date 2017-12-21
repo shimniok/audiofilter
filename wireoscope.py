@@ -41,7 +41,13 @@ win.setWindowTitle('Python Oscilloscope')
 pg.setConfigOptions(antialias=True)
 
 p6 = win.addPlot(title="Updating plot")
+p6.setYRange(-1,1)
+p6.setXRange(0,SAMPLES)
+p6.showGrid(x=True, y=True)
+p6.getViewBox().disableAutoRange()
+
 curve = p6.plot(pen='y')
+
 def update():
     global curve, p6, data
     curve.setData(data[:SAMPLES])
@@ -83,9 +89,11 @@ def callback(in_data, frame_count, time_info, status):
     #out_data,zi = lfilter(b, a, to_floats(in_data), zi=zi)
     out_data = to_floats(in_data)
 
+    print(count)
+
     if count >= SAMPLES:
         count = 0
-    data[count:count+1024+1] = out_data
+    data[count:count+1024] = out_data
     count += 1024
     update()
 
